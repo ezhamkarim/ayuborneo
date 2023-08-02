@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.example.ayuborneo",
+            "sha256_cert_fingerprints": [
+                "99:07:1B:6B:B5:36:1A:5A:CE:1C:9B:4B:19:26:E7:AF:6F:C1:1F:FC:4A:4E:D4:F3:5D:0E:1F:61:51:E4:38:C9"
+            ]
+        }
+    }
+]
