@@ -36,9 +36,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <!-- <data android:scheme="ayuprintapp" /> -->
-                <data android:scheme="http" android:host="ayuborneo.x1.com.my" />
-                <data android:scheme="https" android:host="ayuborneo.x1.com.my" />
+                <data android:scheme="ayuprintapp" android:host="ayuborneo.x1.com.my" />
+                <!-- <data android:scheme="http" android:host="ayuborneo.x1.com.my" /> -->
+                <!-- <data android:scheme="https" android:host="ayuborneo.x1.com.my" /> -->
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -7,15 +8,19 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class InternalPdfView extends StatefulWidget {
-  const InternalPdfView({super.key});
+  const InternalPdfView({super.key, this.query, this.path});
+  final Map<String, String>? query;
+  final String? path;
   static const routeName = '/output.pdf';
   @override
   State<InternalPdfView> createState() => _InternalPdfViewState();
 }
 
 class _InternalPdfViewState extends State<InternalPdfView> {
+  final _client = http.Client();
   String urlPDFPath = "";
   bool exists = true;
   int _totalPages = 0;
@@ -24,6 +29,7 @@ class _InternalPdfViewState extends State<InternalPdfView> {
   late PDFViewController _pdfViewController;
   bool loaded = false;
   String error = '';
+  PdfPageSettings? pageSettings;
   Future<File?> getFileFromUrl(String url, {name}) async {
     var fileName = 'invoice';
     if (name != null) {
@@ -46,6 +52,50 @@ class _InternalPdfViewState extends State<InternalPdfView> {
     }
   }
 
+  Future<File?> postFile({
+    required String url,
+    required Map<String, String> body,
+    name,
+  }) async {
+    var fileName = body['id'] ?? 'output';
+    if (name != null) {
+      fileName = name;
+    }
+    try {
+      var data = await _client.post(Uri.parse(url),
+          body: jsonEncode(body),
+          headers: {'Content-Type': 'application/json'});
+      var bytes = jsonDecode(data.body)['d'];
+      List<int> newBytes = [];
+
+      for (var byte in bytes) {
+        newBytes.add(byte);
+      }
+      log('newBytes : ${newBytes.runtimeType}');
+
+      var dir = await getApplicationDocumentsDirectory();
+      File file = File("${dir.path}/$fileName.pdf");
+      print('Dir path = ${dir.path}');
+      File urlFile = await file.writeAsBytes(newBytes);
+
+      final PdfDocument document =
+          PdfDocument(inputBytes: urlFile.readAsBytesSync());
+
+      document.pageSettings.margins.all = 5;
+
+      pageSettings = document.pageSettings;
+      var urlFileUpdated = await File("${dir.path}/$fileName.pdf")
+          .writeAsBytes(await document.save());
+      return urlFileUpdated;
+    } catch (e) {
+      log('Error : $error');
+      error = e.toString();
+      log('Err : $e');
+      return null;
+      // throw Exception("Error opening url file $e");
+    }
+  }
+
   void requestPersmission() async {
     await Permission.storage.request();
     await Permission.manageExternalStorage.request();
@@ -54,6 +104,39 @@ class _InternalPdfViewState extends State<InternalPdfView> {
   @override
   void initState() {
     requestPersmission();
+
+    var fromQuery = widget.query;
+
+    if (fromQuery != null) {
+      log(fromQuery.toString());
+      var data = fromQuery['id'] ?? '';
+
+      // var pdfData = int.tryParse(data);
+
+      if (data.isEmpty) {
+        loaded = true;
+        exists = false;
+        error = 'no id';
+
+        return;
+      }
+      postFile(
+        url: 'https://ayumobile.x1.com.my/ayudata.asmx/ConvertPdfToBinary',
+        body: {'pdfData': data.toString()},
+      ).then((value) => {
+            setState(() {
+              if (value != null) {
+                urlPDFPath = value.path;
+                loaded = true;
+                exists = true;
+              } else {
+                exists = false;
+                loaded = false;
+              }
+            })
+          });
+      return;
+    }
     getFileFromUrl(
       'https://ayuborneo.x1.com.my${InternalPdfView.routeName}',
     ).then((value) => {
@@ -105,9 +188,18 @@ class _InternalPdfViewState extends State<InternalPdfView> {
       return Scaffold(
         appBar: AppBar(title: const Text('PDF'), actions: [
           IconButton(
+              onPressed: () {
+                DialogHelper.dialogWithOutActionWarning(
+                    context, 'Path : ${widget.path}, Param : ${widget.query}');
+              },
+              icon: const Icon(Icons.info)),
+          IconButton(
               onPressed: () async {
                 Navigator.of(context).pushNamed(ExamplePrinterView.routeName,
-                    arguments: urlPDFPath);
+                    arguments: {
+                      'urlPDFPath': urlPDFPath,
+                      'pageSettings': pageSettings
+                    });
                 // final pdf = File(urlPDFPath);
                 // await Printing.layoutPdf(
                 //         onLayout: (_) => pdf.readAsBytesSync(),

@@ -21,15 +21,6 @@ class SampleItemListView extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           title: const Text('Sample Items'),
-          actions: const [
-            // IconButton(
-            //   icon: const Icon(Icons.settings),
-            //   onPressed: () {
-            //     launchUrl(Uri.parse('https://ayuborneo.x1.com.my/output.pdf'), mode: LaunchMode.externalApplication);
-            //     // Navigator.restorablePushNamed(context, SettingsView.routeName);
-            //   },
-            // ),
-          ],
         ),
 
         // To work with lists that may contain a large number of items, it’s best
