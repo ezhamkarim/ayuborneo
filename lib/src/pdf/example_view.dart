@@ -50,13 +50,18 @@ class _ExamplePrinterViewState extends State<ExamplePrinterView> {
   final _ipController = TextEditingController();
   final _portController = TextEditingController();
   Printer? selectedPrinter;
-  double printerDpi = 170.0;
+  double printerDpi = 200.0;
+  // double ratio = 2947;
   List<CapabilityProfileItem> cpItems = [];
   CapabilityProfileItem? selectedCapabilities;
   String capability = 'default';
   bool isLoading = false;
   @override
   void initState() {
+    // var ps = widget.pageSettings;
+
+    // printerDpi = (ps.size.height * ps.size.width) / ratio;
+
     dpiTextController.text = printerDpi.toString();
     if (Platform.isWindows) defaultPrinterType = PrinterType.usb;
     super.initState();
@@ -257,7 +262,7 @@ class _ExamplePrinterViewState extends State<ExamplePrinterView> {
 
       // PaperSize.mm80 or PaperSize.mm58
       final generator = Generator(PaperSize.mm56, profile);
-      bytes += generator.setGlobalCodeTable('CP1252');
+      // bytes += generator.setGlobalCodeTable('CP1252');
 
       var filePath = widget.filePath;
 
@@ -277,17 +282,19 @@ class _ExamplePrinterViewState extends State<ExamplePrinterView> {
       }
 
       var ticket = <int>[];
-      await for (var page in Printing.raster(File(filePath).readAsBytesSync(),
-          dpi: printerDpi)) {
+
+      var raster =
+          Printing.raster(File(filePath).readAsBytesSync(), dpi: printerDpi);
+      await for (var page in raster) {
         final image = page.asImage();
 
         ticket += generator.image(image);
-        ticket += generator.feed(2);
+        ticket += generator.feed(1);
         ticket += generator.cut();
       }
 
       bytes += ticket;
-      bytes += generator.cut(mode: PosCutMode.full);
+      bytes += generator.cut(mode: PosCutMode.partial, emptyLine: 2);
       await _printEscPos(bytes, generator);
       setState(() {
         isLoading = false;
@@ -407,7 +414,51 @@ class _ExamplePrinterViewState extends State<ExamplePrinterView> {
                   CacheService.deleteCache('printer');
                 },
                 icon: const Icon(Icons.delete)),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.info)),
+            IconButton(
+                onPressed: () {
+                  var ps = widget.pageSettings;
+                  var ratio = (ps.size.height * ps.size.width) / printerDpi;
+                  DialogHelper.dialogWithOutActionWarning(context, 'Info',
+                      widget: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        // shrinkWrap: true,
+                        children: [
+                          Text('Height : ${ps.height}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Width : ${ps.width}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Margin top : ${ps.margins.top}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Margin Bottom : ${ps.margins.bottom}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Margin left : ${ps.margins.left}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Margin Right : ${ps.margins.right}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Size : ${ps.size}'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          Text('Ratio : $ratio'),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                        ],
+                      ));
+                },
+                icon: const Icon(Icons.info)),
             PopupMenuButton<String>(
               padding: const EdgeInsets.all(0),
               onSelected: (index) async {
@@ -1003,22 +1054,22 @@ PrinterType getTypePrinter(String str) {
 }
 
 class DialogHelper {
-  static Future dialogWithOutActionWarning(
-    BuildContext context,
-    String title,
-  ) {
+  static Future dialogWithOutActionWarning(BuildContext context, String title,
+      {Widget? widget, VoidCallback? okay}) {
     return showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             title: Text(title),
+            content: widget,
             actions: [
               ElevatedButton(
                   style: ElevatedButton.styleFrom(
                       elevation: 0, backgroundColor: Colors.blue),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: okay ??
+                      () {
+                        Navigator.of(context).pop();
+                      },
                   child: const Text('Okay'))
             ],
           );

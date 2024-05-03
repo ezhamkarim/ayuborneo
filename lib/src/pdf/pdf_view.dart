@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:ayuborneo/src/log_helper.dart';
 import 'package:ayuborneo/src/pdf/example_view.dart';
+import 'package:ayuborneo/src/service/cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
@@ -80,6 +82,14 @@ class _InternalPdfViewState extends State<InternalPdfView> {
 
       final PdfDocument document =
           PdfDocument(inputBytes: urlFile.readAsBytesSync());
+
+      final List<TextLine> textLine =
+          PdfTextExtractor(document).extractTextLines();
+
+      for (var i = 0; i < textLine.length; i++) {
+        var text = textLine[i].text;
+        logSuccess('i : $i, $text');
+      }
 
       document.pageSettings.margins.all = 5;
 
@@ -190,6 +200,18 @@ class _InternalPdfViewState extends State<InternalPdfView> {
           IconButton(
               onPressed: () {
                 DialogHelper.dialogWithOutActionWarning(
+                  context,
+                  'Delete Printer Setting',
+                  okay: () {
+                    CacheService.deleteCache('printer');
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+              icon: const Icon(Icons.delete)),
+          IconButton(
+              onPressed: () {
+                DialogHelper.dialogWithOutActionWarning(
                     context, 'Path : ${widget.path}, Param : ${widget.query}');
               },
               icon: const Icon(Icons.info)),
@@ -212,35 +234,40 @@ class _InternalPdfViewState extends State<InternalPdfView> {
               },
               icon: const Icon(Icons.print))
         ]),
-        body: PDFView(
-          filePath: urlPDFPath,
-          autoSpacing: true,
-          enableSwipe: true,
-          pageSnap: true,
-          swipeHorizontal: true,
-          nightMode: false,
-          onError: (e) {
-            //Show some error message or UI
-          },
-          onRender: (pages) {
-            if (pages == null) return;
-            setState(() {
-              _totalPages = pages;
-              pdfReady = true;
-            });
-          },
-          onViewCreated: (PDFViewController vc) {
-            setState(() {
-              _pdfViewController = vc;
-            });
-          },
-          onPageChanged: (int? page, int? total) {
-            if (page == null) return;
-            setState(() {
-              _currentPage = page;
-            });
-          },
-          onPageError: (page, e) {},
+        body: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: PDFView(
+              filePath: urlPDFPath,
+              autoSpacing: true,
+              enableSwipe: true,
+              pageSnap: true,
+              swipeHorizontal: true,
+              nightMode: false,
+              onError: (e) {
+                //Show some error message or UI
+              },
+              onRender: (pages) {
+                if (pages == null) return;
+                setState(() {
+                  _totalPages = pages;
+                  pdfReady = true;
+                });
+              },
+              onViewCreated: (PDFViewController vc) {
+                setState(() {
+                  _pdfViewController = vc;
+                });
+              },
+              onPageChanged: (int? page, int? total) {
+                if (page == null) return;
+                setState(() {
+                  _currentPage = page;
+                });
+              },
+              onPageError: (page, e) {},
+            ),
+          ),
         ),
         floatingActionButton: Row(
           mainAxisAlignment: MainAxisAlignment.end,

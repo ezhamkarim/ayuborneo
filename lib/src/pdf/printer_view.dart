@@ -103,7 +103,7 @@ class _PrinterViewState extends State<PrinterView> {
                     itemBuilder: (c, i) {
                       var printer = usbPrinter[i];
                       return ListTile(
-                        title: Text(printer.name ?? 'No Name'),
+                        title: Text(printer.name),
                       );
                     }),
             const SizedBox(
